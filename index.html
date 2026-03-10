@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社内ファイル共有</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --bg: #f1f5f9;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.06);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: var(--primary);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+        }
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            height: 64px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .logo-text {
+            font-size: 17px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 0.3px;
+        }
+        .search-wrap {
+            flex: 1;
+            max-width: 500px;
+            position: relative;
+        }
+        .search-icon {
+            position: absolute;
+            left: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 15px;
+            pointer-events: none;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 14px 10px 42px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            background: white;
+            font-family: inherit;
+            transition: box-shadow 0.2s;
+        }
+        .search-input:focus { box-shadow: 0 0 0 3px rgba(255,255,255,0.4); }
+        .search-input::placeholder { color: #94a3b8; }
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .refresh-btn {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            color: white;
+            transition: background 0.15s;
+        }
+        .refresh-btn:hover { background: rgba(255,255,255,0.25); }
+        .header-info {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* ===== MAIN ===== */
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 28px 24px 48px;
+        }
+
+        /* ===== CONFIG NOTICE ===== */
+        .config-notice {
+            background: #fffbeb;
+            border: 1.5px solid #fcd34d;
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+        .config-notice h3 { font-size: 15px; font-weight: 700; color: #92400e; margin-bottom: 8px; }
+        .config-notice p { font-size: 13px; color: #78350f; line-height: 1.7; }
+        .config-notice code {
+            background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px;
+            font-family: 'Courier New', monospace; font-size: 12px;
+        }
+
+        /* ===== ERROR ===== */
+        .error-banner {
+            background: #fef2f2; border: 1.5px solid #fecaca;
+            border-radius: var(--radius); padding: 14px 18px;
+            color: #dc2626; font-size: 14px;
+            margin-bottom: 20px;
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+
+        /* ===== TOOLBAR ===== */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex; gap: 6px; flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 7px 16px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-btn.active {
+            background: var(--primary); border-color: var(--primary);
+            color: white; font-weight: 600;
+        }
+        .toolbar-right {
+            margin-left: auto;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .file-count {
+            font-size: 13px; color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .sort-select {
+            padding: 7px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--surface);
+            cursor: pointer; outline: none;
+            font-family: inherit; color: var(--text);
+            transition: border-color 0.15s;
+        }
+        .sort-select:focus { border-color: var(--primary); }
+
+        /* ===== FILE GRID ===== */
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        /* ===== FILE CARD ===== */
+        .file-card {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            cursor: pointer;
+            display: flex; flex-direction: column;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+        }
+        .file-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+        .file-preview {
+            height: 110px;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .file-preview img.thumb {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        .file-icon-wrap {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 6px;
+        }
+        .file-icon-emoji { font-size: 40px; line-height: 1; }
+        .file-type-badge {
+            position: absolute; top: 10px; right: 10px;
+            padding: 3px 8px; border-radius: 6px;
+            font-size: 10px; font-weight: 800;
+            letter-spacing: 0.5px;
+            color: white;
+        }
+        .file-info {
+            padding: 12px 14px;
+            border-top: 1px solid var(--border);
+            flex: 1;
+        }
+        .file-name {
+            font-size: 13px; font-weight: 600;
+            color: var(--text); line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; margin-bottom: 6px;
+        }
+        .file-meta {
+            font-size: 11px; color: var(--text-muted);
+            display: flex; gap: 8px;
+        }
+        .file-actions {
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+            display: flex; gap: 8px;
+        }
+        .btn {
+            flex: 1; padding: 7px 0;
+            border-radius: 8px; font-size: 13px; font-weight: 600;
+            cursor: pointer; text-align: center; text-decoration: none;
+            transition: all 0.15s; border: none; font-family: inherit;
+            display: block;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-outline {
+            background: transparent; color: var(--primary);
+            border: 1.5px solid var(--primary);
+        }
+        .btn-outline:hover { background: var(--primary-light); }
+
+        /* ===== LOADING ===== */
+        .loading {
+            text-align: center; padding: 80px 24px;
+            color: var(--text-muted);
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== EMPTY ===== */
+        .empty-state {
+            text-align: center; padding: 80px 24px;
+            color: var(--text-muted);
+        }
+        .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .empty-desc { font-size: 14px; }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center; padding: 24px;
+            font-size: 12px; color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: 24px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            .header-inner { height: auto; flex-wrap: wrap; padding: 12px 0; gap: 10px; }
+            .search-wrap { order: 3; max-width: 100%; width: 100%; }
+            .header-info { display: none; }
+            .file-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+            .main { padding: 16px 14px 48px; }
+            .toolbar { gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ======================================================
+     ★ ここを編集してください（管理者の方へ）
+     ====================================================== -->
+<script>
+const CONFIG = {
+    // ページのタイトル（会社名やチーム名など）
+    siteTitle: '共同募集・リーズ案件資料共有サイト',
+
+    // Google Drive APIキー（Google Cloud Consoleで取得）
+    apiKey: 'AIzaSyD2LdqiJU24wzjxzqXenPjGaYHpAYVG5gQ',
+
+    // 共有するGoogle DriveフォルダのID
+    // フォルダURL例: https://drive.google.com/drive/folders/1aBcDeFgHiJkLmNoPqRsTuV
+    //                                                        ^^^^^^^^^^^^^^^^^^^^^^^^ ここ
+    folderId: '17A8jS3VPyFv-6FAc6gB4PnCkPEZHuGTX',
+
+    // 表示するファイルの最大数
+    maxResults: 200,
+};
+</script>
+<!-- ====================================================== -->
+
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+    <div class="header-inner">
+        <div class="logo">
+            <div class="logo-icon">📁</div>
+            <span class="logo-text" id="site-title">社内ファイル共有</span>
+        </div>
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="search" placeholder="ファイル名で検索...">
+        </div>
+        <div class="header-right">
+            <button class="refresh-btn" id="refresh-btn" title="更新">🔄</button>
+            <div class="header-info" id="last-updated"></div>
+        </div>
+    </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+    <!-- 設定未完了の場合の案内 -->
+    <div class="config-notice" id="config-notice" style="display:none">
+        <h3>⚙️ 初回セットアップが必要です</h3>
+        <p>
+            このHTMLファイルの先頭にある <code>CONFIG</code> を編集して、<br>
+            <code>apiKey</code>（Google Drive APIキー）と <code>folderId</code>（フォルダID）を設定してください。<br>
+            設定方法は添付の「setup_guide.docx」をご確認ください。
+        </p>
+    </div>
+
+    <!-- エラー表示 -->
+    <div class="error-banner" id="error-banner" style="display:none">
+        <span>⚠️</span>
+        <div>
+            <strong>読み込みエラー：</strong>
+            <span id="error-msg"></span>
+        </div>
+    </div>
+
+    <!-- フィルター・ソートバー -->
+    <div class="toolbar">
+        <div class="filter-group">
+            <button class="filter-btn active" data-filter="all">すべて</button>
+            <button class="filter-btn" data-filter="doc">文書・PDF</button>
+            <button class="filter-btn" data-filter="sheet">表計算</button>
+            <button class="filter-btn" data-filter="slide">スライド</button>
+            <button class="filter-btn" data-filter="image">画像</button>
+            <button class="filter-btn" data-filter="other">その他</button>
+        </div>
+        <div class="toolbar-right">
+            <span class="file-count" id="file-count"></span>
+            <select class="sort-select" id="sort-select">
+                <option value="modifiedTime desc">更新日（新しい順）</option>
+                <option value="modifiedTime asc">更新日（古い順）</option>
+                <option value="name asc">ファイル名（昇順）</option>
+                <option value="name desc">ファイル名（降順）</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ファイルグリッド -->
+    <div id="file-grid" class="file-grid"></div>
+
+    <!-- ローディング -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>ファイルを読み込んでいます...</p>
+    </div>
+
+    <!-- 空の状態 -->
+    <div class="empty-state" id="empty-state" style="display:none">
+        <div class="empty-icon">📂</div>
+        <div class="empty-title">ファイルが見つかりません</div>
+        <div class="empty-desc" id="empty-desc">フォルダにファイルがないか、検索・絞り込みに一致するものがありません。</div>
+    </div>
+
+</main>
+
+<footer class="footer">
+    <p id="footer-text">社内ファイル共有ポータル</p>
+</footer>
+
+
+<script>
+// ===== ファイルタイプ定義 =====
+const FILE_TYPES = {
+    'application/pdf':
+        { label: 'PDF', color: '#dc2626', bg: '#fff1f1', emoji: '📄', category: 'doc' },
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        { label: 'DOCX', color: '#2563eb', bg: '#eff6ff', emoji: '📝', category: 'doc' },
+    'application/msword':
+        { label: 'DOC', color: '#2563eb', bg: '#eff6ff', emoji: '📝', category: 'doc' },
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        { label: 'XLSX', color: '#16a34a', bg: '#f0fdf4', emoji: '📊', category: 'sheet' },
+    'application/vnd.ms-excel':
+        { label: 'XLS', color: '#16a34a', bg: '#f0fdf4', emoji: '📊', category: 'sheet' },
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        { label: 'PPTX', color: '#ea580c', bg: '#fff7ed', emoji: '📑', category: 'slide' },
+    'application/vnd.ms-powerpoint':
+        { label: 'PPT', color: '#ea580c', bg: '#fff7ed', emoji: '📑', category: 'slide' },
+    'image/jpeg': { label: 'JPG', color: '#7c3aed', bg: '#f5f3ff', emoji: '🖼️', category: 'image' },
+    'image/png':  { label: 'PNG', color: '#7c3aed', bg: '#f5f3ff', emoji: '🖼️', category: 'image' },
+    'image/gif':  { label: 'GIF', color: '#7c3aed', bg: '#f5f3ff', emoji: '🖼️', category: 'image' },
+    'image/webp': { label: 'WEBP', color: '#7c3aed', bg: '#f5f3ff', emoji: '🖼️', category: 'image' },
+    'image/svg+xml': { label: 'SVG', color: '#7c3aed', bg: '#f5f3ff', emoji: '🖼️', category: 'image' },
+    'application/vnd.google-apps.document':
+        { label: 'Docs', color: '#2563eb', bg: '#eff6ff', emoji: '📝', category: 'doc' },
+    'application/vnd.google-apps.spreadsheet':
+        { label: 'Sheets', color: '#16a34a', bg: '#f0fdf4', emoji: '📊', category: 'sheet' },
+    'application/vnd.google-apps.presentation':
+        { label: 'Slides', color: '#ea580c', bg: '#fff7ed', emoji: '📑', category: 'slide' },
+    'application/vnd.google-apps.form':
+        { label: 'Forms', color: '#7c3aed', bg: '#f5f3ff', emoji: '📋', category: 'other' },
+};
+
+function getFileType(mimeType) {
+    return FILE_TYPES[mimeType] || { label: 'FILE', color: '#64748b', bg: '#f8fafc', emoji: '📄', category: 'other' };
+}
+
+// ===== 状態管理 =====
+let allFiles = [];
+let currentFilter = 'all';
+let currentSearch = '';
+let currentSort = 'modifiedTime desc';
+
+// ===== 初期化 =====
+document.addEventListener('DOMContentLoaded', () => {
+    document.title = CONFIG.siteTitle;
+    document.getElementById('site-title').textContent = CONFIG.siteTitle;
+    document.getElementById('footer-text').textContent = CONFIG.siteTitle;
+
+    if (CONFIG.apiKey === 'YOUR_API_KEY_HERE' || CONFIG.folderId === 'YOUR_FOLDER_ID_HERE') {
+        document.getElementById('config-notice').style.display = 'block';
+        document.getElementById('loading').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('search').addEventListener('input', e => {
+        currentSearch = e.target.value.toLowerCase();
+        renderFiles();
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            renderFiles();
+        });
+    });
+
+    document.getElementById('sort-select').addEventListener('change', e => {
+        currentSort = e.target.value;
+        fetchFiles();
+    });
+
+    document.getElementById('refresh-btn').addEventListener('click', () => fetchFiles());
+
+    fetchFiles();
+});
+
+// ===== データ取得 =====
+async function fetchFiles() {
+    showLoading(true);
+    hideError();
+
+    const [sortField, sortDir] = currentSort.split(' ');
+    const url = new URL('https://www.googleapis.com/drive/v3/files');
+    url.searchParams.set('q', `'${CONFIG.folderId}' in parents and trashed=false`);
+    url.searchParams.set('fields', 'files(id,name,mimeType,size,modifiedTime,webViewLink,thumbnailLink)');
+    url.searchParams.set('orderBy', `${sortField} ${sortDir}`);
+    url.searchParams.set('pageSize', String(CONFIG.maxResults));
+    url.searchParams.set('key', CONFIG.apiKey);
+
+    try {
+        const res = await fetch(url.toString());
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            const msg = err.error?.message || `HTTPエラー ${res.status}`;
+            if (res.status === 403) throw new Error(`アクセス拒否: ${msg}（APIキーまたはフォルダの共有設定をご確認ください）`);
+            if (res.status === 400) throw new Error(`リクエストエラー: ${msg}（フォルダIDをご確認ください）`);
+            throw new Error(msg);
+        }
+        const data = await res.json();
+        allFiles = data.files || [];
+
+        const now = new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        document.getElementById('last-updated').textContent = `更新: ${now}`;
+
+        renderFiles();
+    } catch (err) {
+        showError(err.message);
+        console.error(err);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// ===== 描画 =====
+function renderFiles() {
+    const grid = document.getElementById('file-grid');
+
+    const filtered = allFiles.filter(f => {
+        const ft = getFileType(f.mimeType);
+        const matchFilter = currentFilter === 'all' || ft.category === currentFilter;
+        const matchSearch = !currentSearch || f.name.toLowerCase().includes(currentSearch);
+        return matchFilter && matchSearch;
+    });
+
+    document.getElementById('file-count').textContent = `${filtered.length} 件`;
+
+    if (filtered.length === 0) {
+        grid.innerHTML = '';
+        document.getElementById('empty-state').style.display = 'block';
+        document.getElementById('empty-desc').textContent = currentSearch
+            ? `"${escapeHtml(currentSearch)}" に一致するファイルが見つかりません。`
+            : 'このフォルダにはまだファイルがないか、絞り込み条件に一致するものがありません。';
+        return;
+    }
+
+    document.getElementById('empty-state').style.display = 'none';
+    grid.innerHTML = filtered.map(f => createCard(f)).join('');
+}
+
+function createCard(file) {
+    const ft = getFileType(file.mimeType);
+    const isGoogleNative = file.mimeType?.startsWith('application/vnd.google-apps.');
+    const isImage = file.mimeType?.startsWith('image/');
+
+    const date = file.modifiedTime
+        ? new Date(file.modifiedTime).toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })
+        : '';
+    const size = file.size ? formatSize(parseInt(file.size)) : '';
+
+    const viewUrl = file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`;
+    const downloadUrl = isGoogleNative ? null : `https://drive.google.com/uc?export=download&id=${file.id}`;
+
+    let previewHTML;
+    if (isImage && file.thumbnailLink) {
+        previewHTML = `
+            <img class="thumb" src="${file.thumbnailLink}" alt="${escapeHtml(file.name)}" loading="lazy"
+                 onerror="this.parentNode.innerHTML='<div class=\\"file-icon-wrap\\"><span class=\\"file-icon-emoji\\">${ft.emoji}</span></div>'">
+            <span class="file-type-badge" style="background:${ft.color}">${ft.label}</span>`;
+    } else {
+        previewHTML = `
+            <div class="file-icon-wrap">
+                <span class="file-icon-emoji">${ft.emoji}</span>
+            </div>
+            <span class="file-type-badge" style="background:${ft.color}">${ft.label}</span>`;
+    }
+
+    const downloadBtn = downloadUrl
+        ? `<a href="${downloadUrl}" class="btn btn-outline" target="_blank" onclick="event.stopPropagation()">保存</a>`
+        : '';
+
+    return `
+        <div class="file-card" onclick="window.open('${viewUrl}', '_blank')">
+            <div class="file-preview" style="background:${ft.bg}">
+                ${previewHTML}
+            </div>
+            <div class="file-info">
+                <div class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
+                <div class="file-meta">
+                    <span>${date}</span>
+                    ${size ? `<span>${size}</span>` : ''}
+                </div>
+            </div>
+            <div class="file-actions">
+                <a href="${viewUrl}" class="btn btn-primary" target="_blank" onclick="event.stopPropagation()">開く</a>
+                ${downloadBtn}
+            </div>
+        </div>
+    `;
+}
+
+// ===== ユーティリティ =====
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showLoading(show) {
+    document.getElementById('loading').style.display = show ? 'block' : 'none';
+    document.getElementById('file-grid').style.display = show ? 'none' : 'grid';
+}
+
+function showError(msg) {
+    const banner = document.getElementById('error-banner');
+    document.getElementById('error-msg').textContent = msg;
+    banner.style.display = 'flex';
+}
+
+function hideError() {
+    document.getElementById('error-banner').style.display = 'none';
+}
+</script>
+</body>
+</html>
