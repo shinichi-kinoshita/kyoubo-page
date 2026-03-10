@@ -290,8 +290,120 @@
             .case-tab { padding: 12px 14px; }
             .case-tab-sub { display: none; }
             .file-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-            .main { padding: 14px 12px 48px; }
+            .main { padding: 14px 12px 130px; }
         }
+
+        /* ===== RULES PANEL (固定フッター) ===== */
+        body { padding-bottom: 58px; }
+
+        .rules-panel {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 200;
+            font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+        }
+
+        /* 展開コンテンツ */
+        .rules-content {
+            background: #1e293b;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .rules-content.open {
+            max-height: 420px;
+            overflow-y: auto;
+        }
+        .rules-content-inner {
+            padding: 20px 28px 24px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .rules-content-title {
+            font-size: 14px; font-weight: 800;
+            color: #f1f5f9;
+            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .rules-content-title span { font-size: 16px; }
+        .rules-body {
+            font-size: 13px; line-height: 1.85;
+            color: #cbd5e1;
+        }
+        .rules-body p { margin-bottom: 8px; }
+        .rules-body .warn {
+            color: #fca5a5;
+            padding: 6px 0 2px;
+            font-size: 12.5px;
+        }
+        .rules-body .form-items {
+            background: rgba(255,255,255,0.07);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #e2e8f0;
+            line-height: 2;
+        }
+        .rules-body .note {
+            font-size: 12px; color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* バー部分 */
+        .rules-bar {
+            background: #1e293b;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 52px;
+            gap: 8px;
+        }
+        .rules-bar-label {
+            font-size: 12px; font-weight: 700;
+            color: #94a3b8;
+            display: flex; align-items: center; gap: 6px;
+            flex-shrink: 0;
+            margin-right: 6px;
+        }
+        .rules-tab-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: #94a3b8;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .rules-tab-btn:hover {
+            border-color: #60a5fa;
+            color: #93c5fd;
+            background: rgba(96,165,250,0.1);
+        }
+        .rules-tab-btn.active {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: white;
+        }
+        .rules-divider {
+            width: 1px; height: 20px;
+            background: rgba(255,255,255,0.15);
+            flex-shrink: 0; margin: 0 4px;
+        }
+        .rules-close-btn {
+            margin-left: auto;
+            width: 28px; height: 28px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            border: none; cursor: pointer;
+            color: #64748b; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; flex-shrink: 0;
+        }
+        .rules-close-btn:hover { background: rgba(255,255,255,0.15); color: #cbd5e1; }
     </style>
 </head>
 <body>
@@ -451,6 +563,29 @@ const CONFIG = {
 <footer class="footer">
     <p id="footer-text">共同募集・リーズ案件資料共有サイト</p>
 </footer>
+
+<!-- ===== RULES PANEL ===== -->
+<div class="rules-panel" id="rules-panel">
+
+    <!-- 展開コンテンツ -->
+    <div class="rules-content" id="rules-content">
+        <div class="rules-content-inner" id="rules-content-inner">
+            <!-- JS で内容を差し込む -->
+        </div>
+    </div>
+
+    <!-- バー -->
+    <div class="rules-bar">
+        <div class="rules-bar-label">
+            <span>📋</span> 全体ルール
+        </div>
+        <div class="rules-divider"></div>
+        <button class="rules-tab-btn" id="rtab-0" onclick="toggleRule(0)">挙績報告時のルール</button>
+        <button class="rules-tab-btn" id="rtab-1" onclick="toggleRule(1)">取扱外商品の提案</button>
+        <button class="rules-close-btn" id="rules-close-btn" onclick="closeRule()" title="閉じる" style="display:none">✕</button>
+    </div>
+
+</div>
 
 
 <script>
@@ -761,6 +896,78 @@ function showError(msg) {
 function hideError() {
     const b = document.getElementById('error-banner');
     if (b) b.style.display = 'none';
+}
+
+// ===== ルールパネル =====
+const RULES = [
+    {
+        title: '挙績報告時のルールについて',
+        icon: '📝',
+        content: `
+            <p>共同募集漏れを防ぐため、<strong>取扱報告書の送信前</strong>に、共同募集の分担入力が完了していることが確認できるスクリーンショットを Google Space「総監督_○○」チャンネルに送り、上長の確認を取ってください。対面での確認も可能です。</p>
+            <p>（可能であれば、HSの取引プロパティの共同募集チェックを「済」に変更いただけると助かります。）</p>
+            <p class="warn">⚠️ 共同募集漏れは送客元との契約違反にあたり、会社全体での送客停止につながるリスクがあります。十分にご注意ください。</p>
+            <p class="warn">⚠️ 漏れが発覚した場合、成立前であればソリシターへ連絡して成立保留・修正の対応を取り、既に成立済みの場合は管理部へご連絡ください。</p>
+        `
+    },
+    {
+        title: '取扱外商品の提案について',
+        icon: '⚠️',
+        content: `
+            <p>取扱外商品の提案は原則禁止ですが、お客様からの強いご要望や、客観的にやむを得ないと判断できる状況であれば、例外として認めています。提案を検討する際は、以下の項目を Google Space「総監督_○○」チャンネルに送り、<strong>事前承認を取ってください。</strong></p>
+            <div class="form-items">
+                【顧客ID】<br>
+                【担当FP】<br>
+                【単独募集商品】<br>
+                【経緯】<span class="note">※やむを得ない理由をできるだけ詳細に記載してください。</span>
+            </div>
+            <p class="warn">⚠️ 基本的に認められていないため、提案前に必ず取扱保険会社をご確認ください。</p>
+            <p class="warn">⚠️ 承認を得て単独募集した場合も、社内評価・報酬は共同募集と同じ扱いとなります。</p>
+        `
+    }
+];
+
+let currentRuleIndex = -1;
+
+function toggleRule(idx) {
+    const content   = document.getElementById('rules-content');
+    const inner     = document.getElementById('rules-content-inner');
+    const closeBtn  = document.getElementById('rules-close-btn');
+
+    if (currentRuleIndex === idx) {
+        // 同じタブを再クリック → 閉じる
+        closeRule();
+        return;
+    }
+
+    currentRuleIndex = idx;
+    const rule = RULES[idx];
+
+    inner.innerHTML = `
+        <div class="rules-content-title">
+            <span>${rule.icon}</span>${rule.title}
+        </div>
+        <div class="rules-body">${rule.content}</div>
+    `;
+
+    content.classList.add('open');
+    closeBtn.style.display = 'flex';
+
+    // タブのアクティブ状態を更新
+    document.querySelectorAll('.rules-tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
+    });
+}
+
+function closeRule() {
+    const content  = document.getElementById('rules-content');
+    const closeBtn = document.getElementById('rules-close-btn');
+
+    content.classList.remove('open');
+    closeBtn.style.display = 'none';
+    currentRuleIndex = -1;
+
+    document.querySelectorAll('.rules-tab-btn').forEach(btn => btn.classList.remove('active'));
 }
 </script>
 </body>
